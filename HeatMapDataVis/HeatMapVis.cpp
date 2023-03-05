@@ -9,10 +9,10 @@
 #include <vector>
 
 const unsigned int SCREEN_WIDTH = 480;
-const unsigned int SCREEN_HEIGHT = 440;
+const unsigned int SCREEN_HEIGHT = 500;
 
 #define GRID_MARGIN 4.0
-#define NUM_ROWS 10
+#define NUM_ROWS 15
 #define NUM_COLUMNS 3
 #define DATA_SIZE 683
 
@@ -103,25 +103,91 @@ void drawGrid()
 	glPopMatrix();	// Pop glmatrix from stack
 }
 
-void drawColorRectangles()
+void drawColorRectangles(std::vector<std::vector<GLfloat>> dataVec)
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	// Set iterator to data
+	std::vector<std::vector<GLfloat>>::iterator dataIt = dataVec.begin() + 60;
 
-	float green = 0.05;
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	for (unsigned int rowNum = 0; rowNum < NUM_ROWS - 1; ++rowNum)
 	{
-		for (unsigned int colNum = 1; colNum < NUM_COLUMNS; ++colNum)
+		// Compute correlation coefficients for current point
+		float coef1 = 0.0;
+		float coef2 = 0.0;
+		float coef3 = 0.0;
+		float coef4 = 0.0;
+		float coef5 = 0.0;
+		float coef6 = 0.0;
+
+		// coef1 is BN(6) - NN(8)
+		// coef2 is (UCSize(2) - UCShape(3)
+		coef1 = (*dataIt)[6] - (*dataIt)[7];
+		coef2 = (*dataIt)[5] - (*dataIt)[8];
+
+		// coef3 is (4 - 1)
+		// coef4 is (5 - 7)
+		coef3 = (*dataIt)[2] - (*dataIt)[1];
+		coef4 = (*dataIt)[4] - (*dataIt)[3];
+
+		coef5 = (*dataIt)[6] - (*dataIt)[2];
+		coef6 = (*dataIt)[3] - (*dataIt)[8];
+
+
+		// Convert to range [0,1] from range [-1, 1]
+		coef1 = (coef1 + 1) / 2;
+		coef2 = (coef2 + 1) / 2;
+		coef3 = (coef3 + 1) / 2;
+		coef4 = (coef4 + 1) / 2;
+		coef5 = (coef5 + 1) / 2;
+		coef6 = (coef6 + 1) / 2;
+
+		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)
 		{
-			glColor3f(0.0, green, 0.0);
-			glRectf(	// Draw rectangles for heatmap grid
-				(SCREEN_WIDTH / NUM_COLUMNS) * colNum,
-				(SCREEN_HEIGHT / NUM_ROWS) * rowNum,
-				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN,
-				(SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
-			);
-			green += 0.05;
+			// first iteration, draw label
+			if (colNum == 0)
+			{
+				glColor3f(0.0, 0.0, 0.0);
+				// Initialize font
+				void* font = GLUT_BITMAP_8_BY_13;
+
+				// Extract label from dataVec
+				std::string co1 = std::to_string((int)(*dataIt)[0]);
+
+				// Position label
+				glRasterPos2i(((SCREEN_WIDTH / NUM_COLUMNS) * colNum) + 20,
+					SCREEN_HEIGHT - ((SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 2)));
+
+				// Print label
+				for (std::string::iterator labelIt = co1.begin(); labelIt != co1.end(); ++labelIt)
+				{	// Loop through string, displaying each character
+					char c = *labelIt;
+					glutBitmapCharacter(font, c);
+				}
+			}
+			else if (colNum == 1)
+			{	// 2nd iteration, draw rectangle
+				glColor3f(0.0, coef1, coef2);
+				glRectf(	// Draw rectangles for heatmap grid
+					(SCREEN_WIDTH / NUM_COLUMNS) * colNum,
+					(SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+					((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN,
+					(SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+				);
+			}
+			else
+			{	// 3rd iteration, draw rectangle
+				glColor3f(0.0, coef3, coef4);
+				glRectf(	// Draw rectangles for heatmap grid
+					(SCREEN_WIDTH / NUM_COLUMNS) * colNum,
+					(SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+					((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN,
+					(SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+				);
+			}
 		}
+		// Increment iterator
+		++dataIt;
 	}
 }
 
@@ -136,7 +202,7 @@ void printLabels()
 	// Initialize font
 	void* font = GLUT_BITMAP_9_BY_15;
 
-	glRasterPos2i(0.0 + 20, SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+	glRasterPos2i(0.0 + 20, SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS));
 
 	// Print neighborhhood class ratio
 	for (std::string::iterator labelIt = s.begin(); labelIt != s.end(); ++labelIt)
@@ -147,7 +213,7 @@ void printLabels()
 
 	std::string co1 = "Coefficient 1";
 	glRasterPos2i((SCREEN_WIDTH / NUM_COLUMNS) + 20,
-		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS));
 
 	// Print neighborhhood class ratio
 	for (std::string::iterator labelIt = co1.begin(); labelIt != co1.end(); ++labelIt)
@@ -158,7 +224,7 @@ void printLabels()
 
 	std::string co2 = "Coefficient 2";
 	glRasterPos2i((2 * (SCREEN_WIDTH / NUM_COLUMNS)) + 20,
-		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS));
 
 	// Print neighborhhood class ratio
 	for (std::string::iterator labelIt = co2.begin(); labelIt != co2.end(); ++labelIt)
@@ -175,7 +241,7 @@ void heatMap(std::vector<std::vector<GLfloat>> dataVec)
 	glColor3f(0.0, 0.0, 0.0);	// set color to black
 
 	drawGrid();	// draw grid
-	drawColorRectangles();	// color cells
+	drawColorRectangles(dataVec);	// color cells
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -229,6 +295,28 @@ std::vector<std::vector<GLfloat>> extractData()
 	}
 	// close fstream
 	myFile.close();
+
+	// Normalize data
+	int i = 0;
+	for (auto& vec : allData)
+	{
+		const unsigned int scaleFactor = 10;
+		std::vector<float> normalData;		// Normalize data to [0, 1]
+
+		for (std::vector<float>::iterator iter = vec.begin(); iter < vec.end(); iter++)
+		{
+			if (iter == vec.begin())
+			{
+				normalData.push_back(*iter);
+			}
+			else
+			{
+				normalData.push_back(*iter / scaleFactor);
+			}
+		}
+		allData[i] = normalData;
+		++i;
+	}
 
 	return allData;
 }
