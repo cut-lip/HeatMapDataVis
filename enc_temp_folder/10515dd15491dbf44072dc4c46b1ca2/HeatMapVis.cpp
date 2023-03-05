@@ -82,6 +82,50 @@ void forward(float dist, bool isVisible)
 		moveTo(x, y);
 }
 
+// Draw the outer frame for the heatmap table
+void drawGrid()
+{
+	glLineWidth(2.0);	// Set line width to 2
+	glPushMatrix();		// Push new glmatrix
+	for (unsigned int rowNum = 0; rowNum < NUM_ROWS; ++rowNum)
+	{	// iterate Rows
+		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)
+		{	// iterate Columns
+			glRectf(		// Draw rectangles for heatmap grid
+				0.0 + GRID_MARGIN,
+				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN - 20,
+				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+			);
+		}
+	}
+
+	// This is where you encode the color of the rectangle
+	glColor3f(0.0, 1.0, 0.0);
+	// Draw color
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
+
+	float green = 0.05;
+
+	for (unsigned int rowNum = 0; rowNum < NUM_ROWS; ++rowNum)
+	{
+		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)
+		{
+			glColor3f(0.0, green, 0.0);
+			glRectf(	// Draw rectangles for heatmap grid
+				SCREEN_WIDTH * rowNum + GRID_MARGIN,
+				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN - 20,
+				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+			);
+			green += 0.05;
+		}
+	}
+
+	glPopMatrix();	// Pop glmatrix from stack
+}
+
 void heatMap()
 {
 	glMatrixMode(GL_PROJECTION);
@@ -91,27 +135,13 @@ void heatMap()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// Draw outlines
 	glColor3f(0.0, 0.0, 0.0);
 
-	// Draw the tile frame to contain the glyphs
-	glLineWidth(2.0);		// Set line width to 2
-	//glPushMatrix();			// Push new matrix
-	for (unsigned int rowNum = 0; rowNum < NUM_ROWS; ++rowNum)			// Rows
-	{
-		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)	// Columns
-		{
-			glRectf(		// Draw rectangles for grid of glyphs
-				0.0 + GRID_MARGIN,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * rowNum,
-				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN - 20,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
-			);
-		}
-	}
-	glPopMatrix();
+	drawGrid();
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
 
+	/*
 	// This is where you encode the color of the rectangle
 	glColor3f(0.0, 1.0, 0.0);
 	// Draw color
@@ -122,7 +152,7 @@ void heatMap()
 	glColor3f(0.0, 0.0, 0.0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
-
+	*/
 	unsigned char s[] = "1";
 	int w;
 	w = glutBitmapLength(GLUT_BITMAP_8_BY_13, s);
@@ -136,38 +166,41 @@ void heatMap()
 // Extract data points into vector from text file
 void extractData(std::vector<std::vector<GLfloat>> dataVec)
 {
-
 	// Read data file
 	std::string line = "";
+	// Initialize fstream
 	std::ifstream myFile("breast-cancer-wisconsin.DATA");
 
-	// Process data into a 2-D vector for ease of use
+	// Temp vector for current data point
 	std::vector<std::vector<GLfloat>> allData(DATA_SIZE);
+	// Extract data class into seperate vector
 	std::vector<bool> classify{};
-	// Generalize this by using push_back and getline in test
-	// Also populate vector of classification here
 
 	for (unsigned int i = 0; i < DATA_SIZE; i++)
-	{
+	{	// For each data point in the file
 		getline(myFile, line);
-		int vecCount = 10;
+		int vecCount = 10;	// number of significant attributes
 
 		// Split string into a vector
 		std::vector<int> dataInt;
+		// Initialize sstream
 		std::stringstream ss(line);
 
-		while (ss.good()) {		// Replace "?" in data
+		// While stream has more data to read
+		while (ss.good()) {
 			std::string substr = "";
+			// Split string based on comma delimiter,
+			// extracting attributes
 			getline(ss, substr, ',');
-
-			if (substr == "?") substr = std::to_string(*dataInt.begin());
+			// Add attribute to temp vector
 			dataInt.push_back(stoi(substr));
 			continue;
 		}
 
+		// Convert ints to floats
 		std::vector<GLfloat> data(dataInt.begin(), dataInt.end());
 
-		// Set color determined by class
+		// Set color determined by class (2 = B, 4 = M)
 		if (*--(data.end()) == 4) classify.push_back(false);
 		else					  classify.push_back(true);
 
@@ -175,18 +208,14 @@ void extractData(std::vector<std::vector<GLfloat>> dataVec)
 		data.erase(data.begin());
 		data.erase(--data.end());
 
-		// Duplicate data attributes x 4 to move from 9-D to 36-D
-		data.insert(data.end(), data.begin(), data.end());
-		data.insert(data.end(), data.begin(), data.end());
-
-		allData[i] = data;
+		allData[i] = data;	// add data point to current index of data set
 	}
+	// close fstream
 	myFile.close();
 }
 
 void myDisplay()
 {
-
 	std::vector<std::vector<GLfloat>>* dataVec = new std::vector<std::vector<GLfloat>>(DATA_SIZE);
 
 	extractData(*dataVec);
