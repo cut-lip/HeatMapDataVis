@@ -91,39 +91,82 @@ void drawGrid()
 	{	// iterate Rows
 		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)
 		{	// iterate Columns
-			glRectf(		// Draw rectangles for heatmap grid
-				0.0 + GRID_MARGIN,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * rowNum,
-				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN - 20,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+			glRectf(	// Draw rectangles for heatmap grid
+				(SCREEN_WIDTH / NUM_COLUMNS) * colNum,
+				(SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)),
+				(SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
 			);
 		}
 	}
 
 	// This is where you encode the color of the rectangle
-	glColor3f(0.0, 1.0, 0.0);
+	//glColor3f(0.0, 1.0, 0.0);
 	// Draw color
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
+	//glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
 
 	float green = 0.05;
-
-	for (unsigned int rowNum = 0; rowNum < NUM_ROWS; ++rowNum)
+	
+	for (unsigned int rowNum = 0; rowNum < NUM_ROWS - 1; ++rowNum)
 	{
-		for (unsigned int colNum = 0; colNum < NUM_COLUMNS; ++colNum)
+		for (unsigned int colNum = 1; colNum < NUM_COLUMNS; ++colNum)
 		{
 			glColor3f(0.0, green, 0.0);
 			glRectf(	// Draw rectangles for heatmap grid
-				SCREEN_WIDTH * rowNum + GRID_MARGIN,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * rowNum,
-				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN - 20,
-				SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
+				(SCREEN_WIDTH / NUM_COLUMNS) * colNum,
+				(SCREEN_HEIGHT / NUM_ROWS) * rowNum,
+				((SCREEN_WIDTH / NUM_COLUMNS) * (colNum + 1)) + GRID_MARGIN,
+				(SCREEN_HEIGHT / NUM_ROWS) * (rowNum + 1)
 			);
 			green += 0.05;
 		}
 	}
-
+	
 	glPopMatrix();	// Pop glmatrix from stack
+}
+
+// Print column labels
+void printLabels()
+{
+	glColor3f(0.0, 0.0, 0.0);
+
+	// Label string
+	std::string s = "Data ID";
+
+	// Initialize font
+	void* font = GLUT_BITMAP_9_BY_15;
+
+	glRasterPos2i(0.0 + 20, SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+
+	// Print neighborhhood class ratio
+	for (std::string::iterator labelIt = s.begin(); labelIt != s.end(); ++labelIt)
+	{	// Loop through string, displaying each character
+		char c = *labelIt;
+		glutBitmapCharacter(font, c);
+	}
+
+	std::string co1 = "Coefficient 1";
+	glRasterPos2i((SCREEN_WIDTH / NUM_COLUMNS) + 20,
+		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+
+	// Print neighborhhood class ratio
+	for (std::string::iterator labelIt = co1.begin(); labelIt != co1.end(); ++labelIt)
+	{	// Loop through string, displaying each character
+		char c = *labelIt;
+		glutBitmapCharacter(font, c);
+	}
+
+	std::string co2 = "Coefficient 2";
+	glRasterPos2i((2 * (SCREEN_WIDTH / NUM_COLUMNS)) + 20,
+		SCREEN_HEIGHT - (SCREEN_HEIGHT / NUM_ROWS) + 20);
+
+	// Print neighborhhood class ratio
+	for (std::string::iterator labelIt = co2.begin(); labelIt != co2.end(); ++labelIt)
+	{	// Loop through string, displaying each character
+		char c = *labelIt;
+		glutBitmapCharacter(font, c);
+	}
 }
 
 void heatMap()
@@ -153,24 +196,18 @@ void heatMap()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
 	*/
-	unsigned char s[] = "1";
-	int w;
-	w = glutBitmapLength(GLUT_BITMAP_8_BY_13, s);
-	glRasterPos2i(10.0, (SCREEN_HEIGHT - SCREEN_HEIGHT / 10) + 10);
-	int len = 1;
-	glutBitmapCharacter(GLUT_BITMAP_8_BY_13, s[0]);
 
+	printLabels();
 
 }
 
 // Extract data points into vector from text file
-void extractData(std::vector<std::vector<GLfloat>> dataVec)
+std::vector<std::vector<GLfloat>> extractData()
 {
 	// Read data file
 	std::string line = "";
 	// Initialize fstream
 	std::ifstream myFile("breast-cancer-wisconsin.DATA");
-
 	// Temp vector for current data point
 	std::vector<std::vector<GLfloat>> allData(DATA_SIZE);
 	// Extract data class into seperate vector
@@ -204,45 +241,24 @@ void extractData(std::vector<std::vector<GLfloat>> dataVec)
 		if (*--(data.end()) == 4) classify.push_back(false);
 		else					  classify.push_back(true);
 
-		// Remove labels from data
-		data.erase(data.begin());
-		data.erase(--data.end());
-
 		allData[i] = data;	// add data point to current index of data set
 	}
 	// close fstream
 	myFile.close();
+
+	return allData;
 }
 
 void myDisplay()
 {
-	std::vector<std::vector<GLfloat>>* dataVec = new std::vector<std::vector<GLfloat>>(DATA_SIZE);
-
-	extractData(*dataVec);
+	std::vector<std::vector<GLfloat>> dataVec = extractData();
 
 	glClear(GL_COLOR_BUFFER_BIT);
-
-	/*
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
-	*/
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
 	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
-
-
-	/*
-	// Draw horizontal axis
-	glLineWidth(4.0);
-	glColor3f(1.0, 1.0, 1.0);
-	glBegin(GL_LINES);
-	glVertex2d(0.0, 20.0);
-	glVertex2d(SCREEN_WIDTH, 20.0);
-	glEnd();
-	*/
 
 	heatMap();
 
@@ -252,7 +268,7 @@ void myDisplay()
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
 
-	delete(dataVec);
+	//delete(dataVec);
 	glFlush();
 }
 
@@ -263,7 +279,7 @@ int main(int argc, char** argv)
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 	glutInitWindowPosition(100, 100);
-	glutCreateWindow("GLC-L");
+	glutCreateWindow("HeatMap");
 	glutDisplayFunc(myDisplay);
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
