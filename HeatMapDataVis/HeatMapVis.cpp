@@ -99,15 +99,16 @@ void drawGrid()
 			);
 		}
 	}
+	
+	glPopMatrix();	// Pop glmatrix from stack
+}
 
-	// This is where you encode the color of the rectangle
-	//glColor3f(0.0, 1.0, 0.0);
-	// Draw color
+void drawColorRectangles()
+{
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
 
 	float green = 0.05;
-	
+
 	for (unsigned int rowNum = 0; rowNum < NUM_ROWS - 1; ++rowNum)
 	{
 		for (unsigned int colNum = 1; colNum < NUM_COLUMNS; ++colNum)
@@ -122,8 +123,6 @@ void drawGrid()
 			green += 0.05;
 		}
 	}
-	
-	glPopMatrix();	// Pop glmatrix from stack
 }
 
 // Print column labels
@@ -169,35 +168,20 @@ void printLabels()
 	}
 }
 
-void heatMap()
+// heat map display function
+void heatMap(std::vector<std::vector<GLfloat>> dataVec)
 {
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// Draw outlines
-	glColor3f(0.0, 0.0, 0.0);
+	glColor3f(0.0, 0.0, 0.0);	// set color to black
 
-	drawGrid();
+	drawGrid();	// draw grid
+	drawColorRectangles();	// color cells
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
 
-	/*
-	// This is where you encode the color of the rectangle
-	glColor3f(0.0, 1.0, 0.0);
-	// Draw color
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
-
-	// Draw outline
-	glColor3f(0.0, 0.0, 0.0);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glRectf(2.0, SCREEN_HEIGHT - 2.0, SCREEN_WIDTH / 20 * 2, SCREEN_HEIGHT - SCREEN_HEIGHT / 10);
-	*/
-
-	printLabels();
+	printLabels();	// print column labels
 
 }
 
@@ -249,39 +233,47 @@ std::vector<std::vector<GLfloat>> extractData()
 	return allData;
 }
 
+// Main OpenGL display function
 void myDisplay()
 {
+	// Extract data set into dataVec
 	std::vector<std::vector<GLfloat>> dataVec = extractData();
 
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
+	glClear(GL_COLOR_BUFFER_BIT);	// Set clear buffer bit
+	glMatrixMode(GL_PROJECTION);	// Load GL_PROJECTION matrix
+	glPushMatrix();					// push new GL matrix to atack
+	glLoadIdentity();				// load identity matrix
+	// set orthoganol projection
 	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
 
-	heatMap();
+	// heat map display function
+	heatMap(dataVec);
 
+	// set GL_MODELVIEW matrix
 	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
+	glPopMatrix();	// pop GL matrix from stack
 
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-
-	//delete(dataVec);
-	glFlush();
+	glFlush();	// flush display buffer
 }
 
-
+// program main function - initialize glut and register display
 int main(int argc, char** argv)
 {
-	glutInit(&argc, argv);
+	glutInit(&argc, argv);	// Initialize GLUT
+	// Set initial display mode
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	// Set initial window size
 	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	// Set initial window position
 	glutInitWindowPosition(100, 100);
+	// Set window name, create window
 	glutCreateWindow("HeatMap");
+	// Register OpenGL display func
 	glutDisplayFunc(myDisplay);
+	// Set clear color to white
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+	// Initialize viewport to window dimensions
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	// GLUT main loop initialization
 	glutMainLoop();
 }
